@@ -208,9 +208,9 @@ const AdminDashboard = () => {
                 </Table>
             </TableContainer>
 
-            {/* --- Pending Requests --- */}
+            {/* --- Pending & Approved Requests --- */}
             <Typography variant="h4" component="h2" gutterBottom>
-                Pending Requests
+                Action Required (Pending & Approved)
             </Typography>
             <TableContainer component={Paper} sx={{ mb: 4 }}>
                 <Table>
@@ -218,27 +218,46 @@ const AdminDashboard = () => {
                         <TableRow>
                             <TableCell>Item</TableCell>
                             <TableCell>Requested By</TableCell>
-                            <TableCell>Quantity</TableCell>
+                            <TableCell>Status</TableCell> {/* Added Status column */}
                             <TableCell>Period</TableCell>
-                            <TableCell align="right">Actions</TableCell
->
+                            <TableCell align="right">Actions</TableCell>
                         </TableRow>
                     </TableHead>
                     <TableBody>
                         {pending.map((r) => (
                             <TableRow key={r.id}>
                                 <TableCell>{r.equipment?.name || 'N/A'}</TableCell>
-                                <TableCell>{r.userId}</TableCell> {/* Note: You'd need a join in backend to show name */}
-                                <TableCell>{r.quantityRequested}</TableCell>
+                                <TableCell>{r.userId}</TableCell>
+                                <TableCell>{r.status}</TableCell> {/* Added Status */}
                                 <TableCell>{formatDate(r.startDate)} → {formatDate(r.endDate)}</TableCell>
                                 <TableCell align="right">
-                                    <Button variant="contained" color="success" size="small" onClick={() => handleApprove(r.id)} sx={{ mr: 1 }}>
+                                    <Button 
+                                        variant="contained" 
+                                        color="success" 
+                                        size="small" 
+                                        onClick={() => handleApprove(r.id)} 
+                                        sx={{ mr: 1 }}
+                                        disabled={r.status !== 'PENDING'}
+                                    >
                                         Approve
                                     </Button>
-                                    <Button variant="contained" color="error" size="small" onClick={() => handleReject(r.id)} sx={{ mr: 1 }}>
+                                    <Button 
+                                        variant="contained" 
+                                        color="error" 
+                                        size="small" 
+                                        onClick={() => handleReject(r.id)} 
+                                        sx={{ mr: 1 }}
+                                        disabled={r.status !== 'PENDING'}
+                                    >
                                         Reject
                                     </Button>
-                                    <Button variant="contained" color="primary" size="small" onClick={() => handleIssue(r.id)} disabled={r.status !== 'APPROVED'}>
+                                    <Button 
+                                        variant="contained" 
+                                        color="primary" 
+                                        size="small" 
+                                        onClick={() => handleIssue(r.id)} 
+                                        disabled={r.status !== 'APPROVED'}
+                                    >
                                         Issue
                                     </Button>
                                 </TableCell>

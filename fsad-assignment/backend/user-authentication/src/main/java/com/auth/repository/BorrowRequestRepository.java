@@ -23,8 +23,7 @@ public interface BorrowRequestRepository extends JpaRepository<BorrowRequest, Lo
                                      @Param("startDate") LocalDate startDate,
                                      @Param("endDate") LocalDate endDate);
 
-    // 🔹 Add this method
     List<BorrowRequest> findByUserId(Long userId);
-
     List<BorrowRequest> findByStatus(BorrowStatus status);
+    List<BorrowRequest> findByStatusIn(List<BorrowStatus> statuses);
 }

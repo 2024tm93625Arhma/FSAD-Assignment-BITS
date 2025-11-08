@@ -16,7 +16,6 @@ import com.auth.service.BorrowRequestService;
 
 @RestController
 @RequestMapping("/api/borrow")
-@CrossOrigin(origins = "http://localhost:3000")
 public class BorrowRequestController {
 
     @Autowired

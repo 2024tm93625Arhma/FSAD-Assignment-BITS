@@ -125,7 +125,8 @@ public class BorrowRequestService {
         * Gets all pending requests (for admin).
     */
     public List<BorrowRequest> getPendingRequests() {
-        return brRepo.findByStatus(BorrowStatus.PENDING);
+        List<BorrowStatus> statuses = List.of(BorrowStatus.PENDING, BorrowStatus.APPROVED);
+        return brRepo.findByStatusIn(statuses);
     }
     
     /**

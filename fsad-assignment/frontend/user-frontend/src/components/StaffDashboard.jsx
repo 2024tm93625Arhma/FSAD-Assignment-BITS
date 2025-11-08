@@ -82,7 +82,7 @@ const StaffDashboard = () => {
             setQuantity(1);
             setStartDate('');
             setEndDate('');
-            fetchData(); // Refresh all data
+            fetchData();
         } catch (err) {
             setError(err.response?.data?.message || 'Request failed.');
         }
@@ -197,7 +197,7 @@ const StaffDashboard = () => {
 
             {/* --- 3. Pending Requests (for Staff to manage) --- */}
             <Typography variant="h4" component="h2" gutterBottom>
-                Pending Requests (Manage)
+                Action Required (Pending & Approved)
             </Typography>
             <TableContainer component={Paper} sx={{ mb: 4 }}>
                 <Table>
@@ -205,7 +205,7 @@ const StaffDashboard = () => {
                         <TableRow>
                             <TableCell>Item</TableCell>
                             <TableCell>Requested By</TableCell>
-                            <TableCell>Quantity</TableCell>
+                            <TableCell>Status</TableCell>
                             <TableCell>Period</TableCell>
                             <TableCell align="right">Actions</TableCell>
                         </TableRow>
@@ -215,16 +215,36 @@ const StaffDashboard = () => {
                             <TableRow key={r.id}>
                                 <TableCell>{r.equipment?.name || 'N/A'}</TableCell>
                                 <TableCell>{r.userId}</TableCell>
-                                <TableCell>{r.quantityRequested}</TableCell>
+                                <TableCell>{r.status}</TableCell>
                                 <TableCell>{formatDate(r.startDate)} → {formatDate(r.endDate)}</TableCell>
                                 <TableCell align="right">
-                                    <Button variant="contained" color="success" size="small" onClick={() => handleApprove(r.id)} sx={{ mr: 1 }}>
+                                    <Button 
+                                        variant="contained" 
+                                        color="success" 
+                                        size="small" 
+                                        onClick={() => handleApprove(r.id)} 
+                                        sx={{ mr: 1 }}
+                                        disabled={r.status !== 'PENDING'}
+                                    >
                                         Approve
                                     </Button>
-                                    <Button variant="contained" color="error" size="small" onClick={() => handleReject(r.id)} sx={{ mr: 1 }}>
+                                    <Button 
+                                        variant="contained" 
+                                        color="error" 
+                                        size="small" 
+                                        onClick={() => handleReject(r.id)} 
+                                        sx={{ mr: 1 }}
+                                        disabled={r.status !== 'PENDING'}
+                                    >
                                         Reject
                                     </Button>
-                                    <Button variant="contained" color="primary" size="small" onClick={() => handleIssue(r.id)} disabled={r.status !== 'APPROVED'}>
+                                    <Button 
+                                        variant="contained" 
+                                        color="primary" 
+                                        size="small" 
+                                        onClick={() => handleIssue(r.id)} 
+                                        disabled={r.status !== 'APPROVED'}
+                                    >
                                         Issue
                                     </Button>
                                 </TableCell>
