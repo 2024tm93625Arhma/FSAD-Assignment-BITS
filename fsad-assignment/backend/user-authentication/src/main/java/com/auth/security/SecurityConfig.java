@@ -4,6 +4,7 @@ package com.auth.security;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -15,8 +16,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import com.auth.service.CustomUserDetailsService;
 
 @Configuration
-
-@EnableMethodSecurity
+@EnableMethodSecurity // Ensures @PreAuthorize on controllers is used
 public class SecurityConfig {
     @Autowired
     private JwtAuthFilter jwtAuthFilter ;
@@ -26,23 +26,28 @@ public class SecurityConfig {
    
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        http.csrf().disable()
-            .authorizeHttpRequests()
-            // ✅ Public routes (no token needed)
-            .requestMatchers("/api/users/login", "/api/users/signup").permitAll()
-            
+        http.csrf(csrf -> csrf.disable())
+            .authorizeHttpRequests(auth -> auth
+                // ✅ Public routes (no token needed)
+                .requestMatchers("/api/users/login", "/api/users/signup").permitAll()
+                
+                // ✅ User management (Admin Only)
+                .requestMatchers("/api/users/**").hasRole("ADMIN")
 
-            // ✅ Role-based protected routes
-            .requestMatchers("/api/users/**").hasRole("ADMIN")  // only ADMIN can access user management
-            .requestMatchers("/api/equipment/**").hasAnyRole("ADMIN", "STAFF")
-            .requestMatchers("/api/requests/**").hasAnyRole("STUDENT", "STAFF", "ADMIN")
+                // ✅ Equipment: Authenticated users can view. Admin only can modify.
+                .requestMatchers(HttpMethod.GET, "/api/equipment", "/api/equipment/**").authenticated()
+                .requestMatchers(HttpMethod.POST, "/api/equipment").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.PUT, "/api/equipment/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.DELETE, "/api/equipment/**").hasRole("ADMIN")
 
-            // ✅ All others require authentication
-            .anyRequest().authenticated()
+                // ✅ Borrowing: Authenticated users only. Specific roles are checked at the controller level.
+                .requestMatchers("/api/borrow/**").authenticated()
 
-            .and()
-            .sessionManagement()
-            .sessionCreationPolicy(SessionCreationPolicy.STATELESS);
+                // ✅ All others require authentication
+                .anyRequest().authenticated()
+            )
+            // ✅ Use Stateless session management for JWT
+            .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
 
         http.addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();

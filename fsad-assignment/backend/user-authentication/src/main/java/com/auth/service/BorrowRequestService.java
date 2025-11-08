@@ -121,8 +121,21 @@ public class BorrowRequestService {
         return brRepo.save(br);
     }
 
+    /**
+        * Gets all pending requests (for admin).
+    */
+    public List<BorrowRequest> getPendingRequests() {
+        return brRepo.findByStatus(BorrowStatus.PENDING);
+    }
+    
+    /**
+        * Gets all issued requests (for admin).
+    */
+    public List<BorrowRequest> getIssuedRequests() { 
+        return brRepo.findByStatus(BorrowStatus.ISSUED);
+    }
+
 	public List<BorrowRequest> getRequestsByUser(Long userId) {
-		
 		 return brRepo.findByUserId(userId);
 	}
 }

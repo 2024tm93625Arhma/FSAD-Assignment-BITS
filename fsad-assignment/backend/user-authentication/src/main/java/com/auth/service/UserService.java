@@ -28,6 +28,9 @@ public class UserService {
   
 
     public String signup(SignupRequest request) {
+        if (repo.existsByEmail(request.getEmail())) {
+            throw(new RuntimeException("Invalid email or password"));
+        }
         User user = new User();
         user.setName(request.getName());
         user.setEmail(request.getEmail());

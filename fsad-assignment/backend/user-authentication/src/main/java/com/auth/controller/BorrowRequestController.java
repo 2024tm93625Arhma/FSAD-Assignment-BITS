@@ -16,6 +16,7 @@ import com.auth.service.BorrowRequestService;
 
 @RestController
 @RequestMapping("/api/borrow")
+@CrossOrigin(origins = "http://localhost:3000")
 public class BorrowRequestController {
 
     @Autowired
@@ -67,6 +68,27 @@ public class BorrowRequestController {
     public BorrowRequest reject(@PathVariable Long id, @RequestBody ApproveRequestDto dto) {
         return service.reject(id, dto.getComment());
     }
+
+    /**
+     * [GET] /api/borrow/pending
+     * Gets all pending requests. (Admin/Staff action)
+     */
+    @GetMapping("/pending")
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
+    public List<BorrowRequest> pendingRequests() {
+        return service.getPendingRequests();
+    }
+
+    /**
+     * [GET] /api/borrow/issued
+     * Gets all issued, non-returned requests. (Admin/Staff action)
+     */
+    @GetMapping("/issued")
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')") 
+    public List<BorrowRequest> issuedRequests() {
+        return service.getIssuedRequests();
+    }
+
 
     // ✅ Utility method — extract userId from Authentication
   
