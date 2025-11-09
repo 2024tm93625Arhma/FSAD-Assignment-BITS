@@ -32,6 +32,7 @@ const AdminDashboard = () => {
     const [equipment, setEquipment] = useState([]);
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
+    const [userMap, setUserMap] = useState({});
 
     // Dialog state for equipment form
     const [open, setOpen] = useState(false);
@@ -49,15 +50,22 @@ const AdminDashboard = () => {
     const fetchData = async () => {
         try {
             setLoading(true);
-            const [pendingRes, issuedRes, equipRes] = await Promise.all([
+            const [pendingRes, issuedRes, equipRes, usersRes] = await Promise.all([
                 api.get('/borrow/pending'),
                 api.get('/borrow/issued'),
-                api.get('/equipment')
+                api.get('/equipment'),
+                api.get('/users')
             ]);
             setPending(pendingRes.data);
             setIssued(issuedRes.data);
             setEquipment(equipRes.data);
             setError('');
+            const userList = usersRes.data;
+            const map = userList.reduce((acc, user) => {
+                acc[user.id] = user.name;
+                return acc;
+            }, {});
+            setUserMap(map);
         } catch (err) {
             const msg = err.response?.status === 403
                 ? "Access denied — please log in with Admin/Staff role."
@@ -298,7 +306,7 @@ const AdminDashboard = () => {
                         ) : pending.map((r) => (
                             <TableRow key={r.id}>
                                 <TableCell>{r.equipment?.name || 'N/A'}</TableCell>
-                                <TableCell>{r.userId}</TableCell>
+                                <TableCell>{userMap[r.userId] || r.userId}</TableCell>
                                 <TableCell>{r.status}</TableCell>
                                 <TableCell>{formatDate(r.startDate)} → {formatDate(r.endDate)}</TableCell>
                                 <TableCell align="right">
@@ -359,7 +367,7 @@ const AdminDashboard = () => {
                         ) : issued.map((r) => (
                             <TableRow key={r.id}>
                                 <TableCell>{r.equipment?.name || 'N/A'}</TableCell>
-                                <TableCell>{r.userId}</TableCell>
+                                <TableCell>{userMap[r.userId] || r.userId}</TableCell>
                                 <TableCell>{r.quantityRequested}</TableCell>
                                 <TableCell>{formatDate(r.endDate)}</TableCell>
                                 <TableCell align="right">

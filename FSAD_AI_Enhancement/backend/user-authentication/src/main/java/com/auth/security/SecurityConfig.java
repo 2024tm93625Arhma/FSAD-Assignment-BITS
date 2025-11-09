@@ -46,7 +46,8 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.DELETE, "/api/equipment/**").hasRole("ADMIN")
 
                 // User Management Rules
-                .requestMatchers("/api/users/**").hasRole("ADMIN")  
+                .requestMatchers("/api/users").hasAnyRole("ADMIN") // Fetch all users, allowed only by ADMIN
+                .requestMatchers("/api/users/**").hasAnyRole("ADMIN", "STAFF") // Fetch a single user by the id, allowed by both Staff and Admin
 
                 // Borrow Rules
                 .requestMatchers("/api/borrow/**").authenticated()
