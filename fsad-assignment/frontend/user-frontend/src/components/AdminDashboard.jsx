@@ -30,6 +30,7 @@ const AdminDashboard = () => {
     const [issued, setIssued] = useState([]);
     const [equipment, setEquipment] = useState([]);
     const [error, setError] = useState('');
+    const [userMap, setUserMap] = useState({});
 
     // Dialog state for equipment form
     const [open, setOpen] = useState(false);
@@ -46,14 +47,24 @@ const AdminDashboard = () => {
     // Fetch all data
     const fetchData = async () => {
         try {
-            const [pendingRes, issuedRes, equipRes] = await Promise.all([
+            const [pendingRes, issuedRes, equipRes, usersRes] = await Promise.all([
                 api.get('/borrow/pending'),
                 api.get('/borrow/issued'),
-                api.get('/equipment')
+                api.get('/equipment'),
+                api.get('/users')
             ]);
+            
             setPending(pendingRes.data);
             setIssued(issuedRes.data);
             setEquipment(equipRes.data);
+
+            const userList = usersRes.data;
+            const map = userList.reduce((acc, user) => {
+                acc[user.id] = user.name;
+                return acc;
+            }, {});
+            setUserMap(map);
+
         } catch (err) {
             setError('Failed to fetch data. ' + (err.response?.data?.message || ''));
         }
@@ -66,10 +77,10 @@ const AdminDashboard = () => {
     // --- Request Handlers ---
     const handleApprove = async (id) => {
         const comment = window.prompt('Approval comment (optional):');
-        if (comment === null) return; // User cancelled
+        if (comment === null) return; 
         try {
-            await api.put(`/borrow/${id}/approve`, { comment }); // Use PUT
-            fetchData(); // Refresh lists
+            await api.put(`/borrow/${id}/approve`, { comment }); 
+            fetchData(); 
         } catch (err) {
             alert('Failed to approve: ' + (err.response?.data?.message || err.message));
         }
@@ -79,7 +90,7 @@ const AdminDashboard = () => {
         const comment = window.prompt('Rejection reason (required):');
         if (!comment) return alert('Rejection requires a comment.');
         try {
-            await api.put(`/borrow/${id}/reject`, { comment }); // Use PUT
+            await api.put(`/borrow/${id}/reject`, { comment }); 
             fetchData();
         } catch (err) {
             alert('Failed to reject: ' + (err.response?.data?.message || err.message));
@@ -89,7 +100,7 @@ const AdminDashboard = () => {
     const handleIssue = async (id) => {
         if (!window.confirm('Confirm issue? This will decrement stock.')) return;
         try {
-            await api.put(`/borrow/${id}/issue`); // Use PUT
+            await api.put(`/borrow/${id}/issue`); 
             fetchData();
         } catch (err) {
             alert('Failed to issue: ' + (err.response?.data?.message || err.message));
@@ -120,7 +131,6 @@ const AdminDashboard = () => {
 
     const handleCloseForm = () => setOpen(false);
 
-    // --- THIS FUNCTION CONTAINS THE FIX ---
     const handleSaveEquipment = async () => {
         try {
             const quantity = parseInt(currentEquip.totalQuantity, 10) || 0;
@@ -128,8 +138,6 @@ const AdminDashboard = () => {
                 alert("Total Quantity cannot be negative.");
                 return;
             }
-
-            // 1. Construct the payload with all fields *except* id and availableQuantity
             const payload = {
                 name: currentEquip.name,
                 category: currentEquip.category,
@@ -139,14 +147,11 @@ const AdminDashboard = () => {
             };
 
             if (isEdit) {
-                // 2. If editing, add the ID back and call PUT
                 payload.id = currentEquip.id; 
                 await api.put(`/equipment/${currentEquip.id}`, payload);
             } else {
-                // 3. If creating, do NOT add the id. Call POST.
                 await api.post('/equipment', payload);
             }
-            // --- END OF FIX ---
 
             fetchData();
             handleCloseForm();
@@ -156,12 +161,31 @@ const AdminDashboard = () => {
     };
 
     const handleDeleteEquipment = async (id) => {
-        if (!window.confirm('Are you sure you want to delete this item?')) return;
+        const isPending = pending.some(r => r.equipment?.id === id);
+        const isIssued = issued.some(r => r.equipment?.id === id);
+        if (isPending || isIssued) {
+            alert(
+                "This equipment cannot be deleted.\n\nIt has active (pending, approved, or issued) borrow requests. It can only be deleted after all requests are fully returned."
+            );
+            return; // Stop the delete operation
+        }
+        // CONFIRM: If no active requests, proceed to confirmation.
+        if (!window.confirm('Are you sure you want to delete this item? This action is permanent and cannot be undone.')) {
+            return;
+        }
+        // TRY TO DELETE:
         try {
             await api.delete(`/equipment/${id}`);
             fetchData();
         } catch (err) {
-            alert('Failed to delete: ' + (err.response?.data?.message || err.message));
+            const errorMsg = err.response?.data?.message || err.message;
+            if (errorMsg.includes("foreign key constraint fails")) {
+                alert(
+                    "Failed to delete: This item has a history of past (returned) borrow requests.\n\nTo preserve data integrity, you cannot delete it. Please 'Edit' the item and set its quantity to 0 or 'Archive' it instead."
+                );
+            } else {
+                alert('Failed to delete: ' + errorMsg);
+            }
         }
     };
 
@@ -218,7 +242,7 @@ const AdminDashboard = () => {
                         <TableRow>
                             <TableCell>Item</TableCell>
                             <TableCell>Requested By</TableCell>
-                            <TableCell>Status</TableCell> {/* Added Status column */}
+                            <TableCell>Status</TableCell>
                             <TableCell>Period</TableCell>
                             <TableCell align="right">Actions</TableCell>
                         </TableRow>
@@ -227,8 +251,8 @@ const AdminDashboard = () => {
                         {pending.map((r) => (
                             <TableRow key={r.id}>
                                 <TableCell>{r.equipment?.name || 'N/A'}</TableCell>
-                                <TableCell>{r.userId}</TableCell>
-                                <TableCell>{r.status}</TableCell> {/* Added Status */}
+                                <TableCell>{userMap[r.userId] || r.userId}</TableCell>
+                                <TableCell>{r.status}</TableCell> 
                                 <TableCell>{formatDate(r.startDate)} → {formatDate(r.endDate)}</TableCell>
                                 <TableCell align="right">
                                     <Button 
@@ -286,7 +310,7 @@ const AdminDashboard = () => {
                         {issued.map((r) => (
                             <TableRow key={r.id}>
                                 <TableCell>{r.equipment?.name || 'N/A'}</TableCell>
-                                <TableCell>{r.userId}</TableCell>
+                                <TableCell>{userMap[r.userId] || r.userId}</TableCell>
                                 <TableCell>{r.quantityRequested}</TableCell>
                                 <TableCell>{formatDate(r.endDate)}</TableCell>
                                 <TableCell align="right">
