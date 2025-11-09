@@ -1,20 +1,59 @@
-import React from "react";
-// 1. IMPORT `useLocation`
+import React, { useState, useEffect } from "react"; 
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { getUserDetails, logout } from "../utils/auth";
-import { AppBar, Toolbar, Typography, Button, Box } from '@mui/material';
+import api from "../utils/api"; 
+import {
+    AppBar,
+    Toolbar,
+    Typography,
+    Button,
+    Box,
+    IconButton, 
+    Badge,      
+    Menu,       
+    MenuItem,   
+} from '@mui/material';
 
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import HomeIcon from '@mui/icons-material/Home';
+import NotificationsIcon from '@mui/icons-material/Notifications'; 
 
 const Navbar = () => {
     const user = getUserDetails();
     const role = user ? user.role : null;
     const navigate = useNavigate();
-    
-    // 2. GET THE CURRENT LOCATION
     const location = useLocation();
+
+    // ---  State for notifications ---
+    const [notifications, setNotifications] = useState([]);
+    const [anchorEl, setAnchorEl] = useState(null);
+    const open = Boolean(anchorEl);
+
+    // ---  Fetch notifications on login ---
+    useEffect(() => {
+        if (role === "ADMIN" || role === "STAFF") {
+            api.get("/notifications/overdue")
+                .then(res => {
+                    setNotifications(res.data);
+                })
+                .catch(err => {
+                    console.error("Failed to fetch notifications:", err);
+                });
+        } else {
+            // Clear notifications if user is not admin/staff
+            setNotifications([]);
+        }
+    }, [role]); // Re-run when role changes (on login/logout)
+
+    // ---  Handlers for notification menu ---
+    const handleMenuOpen = (event) => {
+        setAnchorEl(event.currentTarget);
+    };
+    const handleMenuClose = () => {
+        setAnchorEl(null);
+        // todo: Add logic here to mark notifications as read
+    };
 
     const handleLogout = () => {
         logout();
@@ -60,41 +99,70 @@ const Navbar = () => {
                                 Role: {role}
                             </Typography>
 
-                            {/* 3. SET `variant` BASED ON `location.pathname` */}
                             <Button
                                 component={Link}
                                 to="/"
                                 sx={{ color: "white" }}
                                 startIcon={<HomeIcon />}
-                                // Check if the path is exactly "/"
                                 variant={location.pathname === '/' ? 'outlined' : 'text'}
                             >
                                 Home
                             </Button>
 
-                            {/* 4. SET `variant` BASED ON `location.pathname` */}
                             <Button 
                                 component={Link} 
                                 to={dashboardPath}
                                 sx={{ color: "white" }}
                                 startIcon={<DashboardIcon />}
-                                // Check if the path matches the dashboard path
                                 variant={location.pathname === dashboardPath ? 'outlined' : 'text'}
                             >
                                 Dashboard
                             </Button>
 
-                            {/* 5. SET `variant` BASED ON `location.pathname` */}
                             <Button 
                                 component={Link} 
                                 to="/profile" 
                                 sx={{ color: "white" }}
                                 startIcon={<AccountCircleIcon />}
-                                // Check if the path is "/profile"
                                 variant={location.pathname === '/profile' ? 'outlined' : 'text'}
                             >
                                 Profile
                             </Button>
+
+                            {/* ---  Notification Bell & Menu --- */}
+                            {(role === 'ADMIN' || role === 'STAFF') && (
+                                <>
+                                    <IconButton
+                                        size="large"
+                                        color="inherit"
+                                        aria-label="new notifications"
+                                        onClick={handleMenuOpen}
+                                    >
+                                        <Badge badgeContent={notifications.length} color="error">
+                                            <NotificationsIcon />
+                                        </Badge>
+                                    </IconButton>
+                                    <Menu
+                                        anchorEl={anchorEl}
+                                        open={open}
+                                        onClose={handleMenuClose}
+                                        MenuListProps={{ 'aria-labelledby': 'basic-button' }}
+                                    >
+                                        {notifications.length === 0 ? (
+                                            <MenuItem onClick={handleMenuClose}>No new notifications</MenuItem>
+                                        ) : (
+                                            notifications.map(notif => (
+                                                <MenuItem key={notif.id} onClick={handleMenuClose} sx={{whiteSpace: 'normal'}}>
+                                                    {notif.message}
+                                                </MenuItem>
+                                            ))
+                                        )}
+                                    </Menu>
+                                </>
+                            )}
+                            {/* --- End of Notification Section --- */}
+
+
                             <Button onClick={handleLogout} variant="contained" color="error" sx={{ ml: 1.5 }}>
                                 Logout
                             </Button>
