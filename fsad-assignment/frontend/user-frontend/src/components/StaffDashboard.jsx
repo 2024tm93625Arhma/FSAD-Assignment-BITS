@@ -32,6 +32,7 @@ const StaffDashboard = () => {
     const [issued, setIssued] = useState([]);
     const [error, setError] = useState('');
     const [message, setMessage] = useState('');
+    const [userMap, setUserMap] = useState({});
 
     // Form state
     const [selectedEquip, setSelectedEquip] = useState('');
@@ -41,16 +42,33 @@ const StaffDashboard = () => {
 
     const fetchData = async () => {
         try {
+            // 1. Fetch main data first
             const [equipRes, myReqRes, pendingRes, issuedRes] = await Promise.all([
                 api.get('/equipment'),
                 api.get('/borrow/my'),
                 api.get('/borrow/pending'),
                 api.get('/borrow/issued')
             ]);
+            
             setEquipment(equipRes.data);
             setMyRequests(myReqRes.data);
             setPending(pendingRes.data);
             setIssued(issuedRes.data);
+
+            const allRequests = [...pendingRes.data, ...issuedRes.data];
+            const userIds = [...new Set(allRequests.map(r => r.userId))];
+            const userFetchPromises = userIds.map(id => 
+                api.get(`/users/${id}`)
+            );
+            const userResponses = await Promise.all(userFetchPromises);
+            const map = userResponses.reduce((acc, res) => {
+                const user = res.data;
+                acc[user.id] = user.name;
+                return acc;
+            }, {});
+
+            setUserMap(map);
+
         } catch (err) {
             setError('Failed to fetch data.');
         }
@@ -214,7 +232,7 @@ const StaffDashboard = () => {
                         {pending.map((r) => (
                             <TableRow key={r.id}>
                                 <TableCell>{r.equipment?.name || 'N/A'}</TableCell>
-                                <TableCell>{r.userId}</TableCell>
+                                <TableCell>{userMap[r.userId] || r.userId}</TableCell>
                                 <TableCell>{r.status}</TableCell>
                                 <TableCell>{formatDate(r.startDate)} → {formatDate(r.endDate)}</TableCell>
                                 <TableCell align="right">
@@ -273,7 +291,7 @@ const StaffDashboard = () => {
                         {issued.map((r) => (
                             <TableRow key={r.id}>
                                 <TableCell>{r.equipment?.name || 'N/A'}</TableCell>
-                                <TableCell>{r.userId}</TableCell>
+                                <TableCell>{userMap[r.userId] || r.userId}</TableCell>
                                 <TableCell>{r.quantityRequested}</TableCell>
                                 <TableCell>{formatDate(r.endDate)}</TableCell>
                                 <TableCell align="right">
