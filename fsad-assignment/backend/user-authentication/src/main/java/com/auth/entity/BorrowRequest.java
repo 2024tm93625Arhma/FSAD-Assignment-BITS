@@ -41,6 +41,7 @@ public class BorrowRequest {
     private Instant updatedAt;
 
     private String adminComment;
+	private boolean overdue = false;
 
 	public Long getId() {
 		return id;
@@ -122,6 +123,12 @@ public class BorrowRequest {
 		this.adminComment = adminComment;
 	}
 
+	public void setOverdue(Boolean value) {
+		this.overdue = value;
+	}
 
+	public boolean getOverDue() {
+		return overdue;
+	}
 
 }

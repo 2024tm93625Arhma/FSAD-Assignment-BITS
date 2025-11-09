@@ -26,4 +26,5 @@ public interface BorrowRequestRepository extends JpaRepository<BorrowRequest, Lo
     List<BorrowRequest> findByUserId(Long userId);
     List<BorrowRequest> findByStatus(BorrowStatus status);
     List<BorrowRequest> findByStatusIn(List<BorrowStatus> statuses);
+    List<BorrowRequest> findByStatusAndOverdueFalseAndEndDateBefore(BorrowStatus status, LocalDate date);
 }
