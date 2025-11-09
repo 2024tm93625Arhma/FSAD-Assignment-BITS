@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import com.auth.entity.BorrowRequest;
+import com.auth.entity.BorrowStatus;
 
 public interface BorrowRequestRepository extends JpaRepository<BorrowRequest, Long> {
 
@@ -22,6 +23,7 @@ public interface BorrowRequestRepository extends JpaRepository<BorrowRequest, Lo
                                      @Param("startDate") LocalDate startDate,
                                      @Param("endDate") LocalDate endDate);
 
-    // 🔹 Add this method
     List<BorrowRequest> findByUserId(Long userId);
+    List<BorrowRequest> findByStatus(BorrowStatus status);
+    List<BorrowRequest> findByStatusIn(List<BorrowStatus> statuses);
 }

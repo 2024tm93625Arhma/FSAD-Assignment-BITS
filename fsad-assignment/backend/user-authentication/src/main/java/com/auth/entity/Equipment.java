@@ -1,11 +1,7 @@
 package com.auth.entity;
 
-
-
 import java.time.Instant;
-
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -91,9 +87,4 @@ public class Equipment {
 	public void setCreatedAt(Instant createdAt) {
 		this.createdAt = createdAt;
 	}
-
-
-
-    
 }
-
